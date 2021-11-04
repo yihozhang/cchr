@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "egraph_cchr.h"
+
+cchr {
+  constraint make(int);
+  constraint find(int, lint);
+  constraint link(int, int);
+  constraint union(int, int);
+  constraint pto(int, int);
+  constraint root(int);
+
+  extern eq;
+  logical lint int;
+
+  make @ make(A) <=> root(A);
+  union @ union(A, B) <=> 
+    lint X = lint_create(), 
+    lint Y = lint_create(), 
+    find(A, lint_copy(X)), 
+    find(B, lint_copy(Y)), 
+    link(lint_getval(X), lint_getval(Y)),
+    {lint_destruct(X); lint_destruct(Y); };
+  find_node @ pto(A, B) \ find(A,X) <=> find(B,X);
+  find_root @ root(B) \ find(B, X) <=> { lint_setval(X, B); };
+  link_eq @ link(A, A) <=> true;
+  link @ link(A, B), root(A), root(B) <=> pto(B, A), root(A);
+
+}
+
+int main(int argc, char **argv) {
+  cchr_runtime_init();
+  cchr_add_make_1(1);
+  cchr_add_make_1(2);
+  cchr_add_union_2(1, 2);
+  cchr_consloop(j,pto_2,{
+      printf("pto_2(%i,%i)\n", 
+      cchr_consarg(j,pto_2,1),
+      cchr_consarg(j,pto_2,2));
+  }); 
+  cchr_runtime_free();
+  return 0;
+}
